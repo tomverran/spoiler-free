@@ -14,8 +14,9 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.4.13"
 
-libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.13"
 
+libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
 val circeVersion = "0.7.0"
 libraryDependencies ++= Seq(

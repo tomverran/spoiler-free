@@ -25,6 +25,13 @@ package object reddit {
     case class UnknownError(what: String) extends AuthError
   }
 
+  sealed abstract class SubscribeAction(val value: String)
+
+  case object SubscribeAction {
+    case object Subscribe extends SubscribeAction(value = "sub")
+    case object Unsubscribe extends SubscribeAction(value = "unsub")
+  }
+
   type State = String
   type RedditNel = NonEmptyList[AuthError]
 
@@ -38,6 +45,4 @@ package object reddit {
 
   case class AuthRedirect(uri: Uri, state: HttpCookie)
   case class AuthCode(code: String)
-
-  case class User(name: String, token: RefreshToken)
 }

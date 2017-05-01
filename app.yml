@@ -9,23 +9,23 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
       AttributeDefinitions:
-      - AttributeName: name
+      - AttributeName: value
         AttributeType: S
       KeySchema:
-      - AttributeName: name
+      - AttributeName: value
         KeyType: HASH # THIS IS SO IMPORTANT IT MUST BE SHOUTED
 
   User:
     Type: "AWS::IAM::User"
     Properties:
       Policies:
-      - PolicyDocument:
+      - PolicyName: allow-dynamo
+        PolicyDocument:
           Version: 2012-10-17
           Statement:
             Effect: Allow
             Action:
-            - dynanmodb.put*
-            - dynamodb.get*
-            - dynamodb.scan
+            - dynamodb:PutItem
+            - dynamodb:Scan
             Resource:
              Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}

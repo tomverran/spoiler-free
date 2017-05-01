@@ -15,7 +15,6 @@ import cats.syntax.cartesian._
 import io.circe.Decoder
 import io.circe.parser.decode
 import io.tvc.spoilerfree.reddit.AuthError._
-import cats.syntax.validated._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,7 +25,7 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
   private val userAgent: `User-Agent` = `User-Agent`("spoiler-free/0.1")
   private val authorize: Uri = "https://www.reddit.com/api/v1/authorize"
   private val accessToken: Uri = "https://www.reddit.com/api/v1/access_token"
-  private val me: Uri = "https://oauth.reddit.com/api/v1/me"
+  private val subscribe: Uri = "https://oauth.reddit.com/api/subscribe"
 
   private val http = Http()
 
@@ -36,6 +35,14 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
       c.get[Long]("expires_in") |@|
       c.get[String]("refresh_token").map(RefreshToken)
     ).map(AccessTokenResponse)
+  }
+
+  private[reddit] implicit val refreshResponseReader: Decoder[AccessToken] = Decoder.instance { c =>
+    c.get[String]("access_token").map(AccessToken)
+  }
+
+  private [reddit] val usernameReader: Decoder[String] = Decoder.instance { c =>
+    c.get[String]("name")
   }
 
   /**
@@ -55,7 +62,7 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
               "client_id" -> config.clientId.value,
               "redirect_uri" -> config.redirect.toString,
               "duration" -> "permanent",
-              "scope" -> "identity subscribe",
+              "scope" -> "subscribe",
               "response_type" -> "code"
             )
           )
@@ -64,19 +71,6 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
       )
     )
   }
-
-  def meRequest(token: AccessToken): HttpRequest =
-    HttpRequest(uri = me)
-      .withHeaders(
-        Authorization(OAuth2BearerToken(token.value)),
-        userAgent
-      )
-
-  def username(config: AuthConfig, token: AccessToken): Future[ValidatedNel[AuthError, String]] =
-    http.singleRequest(meRequest(token))
-      .flatMap(_.entity.toStrict(1.second))
-      .map(_.data.decodeString("UTF-8").validNel[AuthError])
-      .recover { case t: Throwable => UnknownError(t.getMessage).invalidNel }
 
   /**
     * Verify Reddit's response from the auth request generated above
@@ -96,9 +90,17 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
   /**
     * Get an access token from Reddit
     */
-  def accessToken(config: AuthConfig, code: AuthCode): Future[ValidatedNel[AuthError, AccessTokenResponse]] =
-    http.singleRequest(tokenRequest(config, code)).flatMap(parseTokenResponse)
-      .recover { case e: Throwable => Validated.invalidNel(UnknownError(e.getMessage)) }
+  def accessToken(config: AuthConfig, code: AuthCode): Future[Either[NonEmptyList[AuthError], AccessTokenResponse]] =
+    http.singleRequest(tokenRequest(config, code)).flatMap(parseJson[AccessTokenResponse])
+      .recover { case e: Throwable => Left(NonEmptyList.of(UnknownError(e.getMessage))) }
+
+
+  /**
+    * Get an access token from Reddit
+    */
+  def accessToken(config: AuthConfig, token: RefreshToken): Future[Either[NonEmptyList[AuthError], AccessToken]] =
+    http.singleRequest(refreshTokenRequest(config, token)).flatMap(parseJson[AccessToken])
+      .recover { case e: Throwable => Left(NonEmptyList.of(UnknownError(e.getMessage))) }
 
   /**
     * Generate an http request to make to Reddit to swap the auth code for an access token
@@ -121,14 +123,55 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
       )
 
   /**
+    * Generate an http request to make to Reddit to swap the auth code for an access token
+    */
+  private[reddit] def refreshTokenRequest(config: AuthConfig, token: RefreshToken): HttpRequest =
+    HttpRequest(POST, accessToken)
+      .withEntity(FormData(Query(
+        "grant_type" -> "refresh_token",
+        "refresh_token" -> token.value
+      )).toEntity)
+      .withHeaders(
+        userAgent,
+        Authorization(
+          BasicHttpCredentials(
+            username = config.clientId.value,
+            password = config.clientSecret.value
+          )
+        )
+      )
+
+  /**
+    * Generate an http request to make to Reddit to sub or unsub
+    */
+  private[reddit] def subscribeRequest(token: AccessToken, action: SubscribeAction): HttpRequest =
+    HttpRequest(POST, subscribe)
+      .withEntity(FormData(Query(
+        "action" -> action.value,
+        "sr_name" -> "formula1"
+      )).toEntity)
+      .withHeaders(
+        userAgent,
+        Authorization(
+          OAuth2BearerToken(
+            token = token.value
+          )
+        )
+      )
+
+  def subscribe(token: AccessToken, action: SubscribeAction): Future[String] =
+    http.singleRequest(subscribeRequest(token, action))
+      .flatMap(_.entity.toStrict(1.second))
+      .map(_.data.decodeString("UTF-8"))
+  /**
     * Parse the HTTP response back from reddit
     */
-  private[reddit] def parseTokenResponse(response: HttpResponse): Future[ValidatedNel[AuthError, AccessTokenResponse]] =
+  private[reddit] def parseJson[A](response: HttpResponse)(implicit r: Decoder[A]): Future[Either[NonEmptyList[AuthError], A]] =
     response.entity.toStrict(1.second).map { body =>
-      decode[AccessTokenResponse](body.data.decodeString("UTF-8"))
-        .left.map[NonEmptyList[AuthError]](e => NonEmptyList.of(UnknownError(s"${e.getMessage} - ${body.data.decodeString("UTF-8")}")))
-    }.map(Validated.fromEither)
-
+      decode[A](body.data.decodeString("UTF-8")).left.map[NonEmptyList[AuthError]] { e =>
+        NonEmptyList.of(UnknownError(s"${e.getMessage} - ${body.data.decodeString("UTF-8")}"))
+      }
+    }
 
   private[reddit] def errorFromString(in: String): AuthError = in match {
     case "access_denied" => AccessDenied
