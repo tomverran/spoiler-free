@@ -1,5 +1,9 @@
 # spoiler-free
 
+[![Build Status](https://travis-ci.org/tomverran/spoiler-free.svg?branch=master)](https://travis-ci.org/tomverran/spoiler-free)
+
+[![GitHub release](https://img.shields.io/github/release/qubyte/rubidium.svg)](https://github.com/tomverran/spoiler-free)
+
 An app to unsubscribe from /r/formula1 every race weekend to avoid accidental spoilers.
 
 ## Installation
