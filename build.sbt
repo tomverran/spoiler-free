@@ -24,6 +24,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.13"
 
 libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
+packageName in Debian := "spoiler-free"
+
 enablePlugins(JavaServerAppPackaging)
 
 enablePlugins(DebianPlugin)
