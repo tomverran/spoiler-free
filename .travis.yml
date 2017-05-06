@@ -10,12 +10,12 @@ addons:
     packages:
       - lintian
       - fakeroot
+      - tree
 
 script: |
   set -e
   sbt test
   sbt debian:packageBin
-  apt-get install -y tree
   tree
 
 deploy:
