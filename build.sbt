@@ -1,6 +1,10 @@
-name := "spoiler-free-2"
+name := "spoiler-free"
 
-version := "1.0"
+maintainer := "Tom"
+
+packageSummary := "Spoiler-Free web app"
+
+packageDescription := "Unsubscribe from /r/formula1 every race weekend"
 
 scalaVersion := "2.12.2"
 
@@ -14,8 +18,15 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.4.13"
 
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.13"
+
 libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
+enablePlugins(JavaServerAppPackaging, SystemdPlugin)
+
+enablePlugins(DebianPlugin)
+
+enablePlugins(GitVersioning)
 
 val circeVersion = "0.7.0"
 libraryDependencies ++= Seq(

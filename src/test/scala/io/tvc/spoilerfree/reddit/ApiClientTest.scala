@@ -21,6 +21,10 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     val constant = 1234345345245l
   }
 
+  implicit class SensibleBody(in: RequestEntity) {
+    def contents = Query(in.asInstanceOf[Strict].data.decodeString("UTF-8"))
+  }
+
   val clientId = ClientId("foo")
   val redirectUri = Uri("https://example.com")
   val auth = AuthConfig(clientId, ClientSecret("foo"), redirectUri)
@@ -60,7 +64,7 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     }
 
     "Set the scopes to identity and subscribe" in {
-      uri.query().get("scope") shouldEqual Some("identity subscribe")
+      uri.query().get("scope") shouldEqual Some("subscribe")
     }
   }
 
@@ -106,15 +110,11 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     }
   }
 
-  "Generate auth code" - {
+  "Token requester" - {
 
     val authCode = AuthCode("foo")
     val secret = ClientSecret("so secret")
     val req = client.tokenRequest(AuthConfig(clientId, secret, redirectUri), authCode)
-
-    implicit class SensibleBody(in: RequestEntity) {
-      def contents = Query(in.asInstanceOf[Strict].data.decodeString("UTF-8"))
-    }
 
     "Go to the right reddit endpoint" in {
       req.uri.toString shouldEqual "https://www.reddit.com/api/v1/access_token"
@@ -134,6 +134,19 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
 
     "Contain the redirect uri" in {
       req.entity.contents.get("redirect_uri") shouldEqual Some(redirectUri.toString)
+    }
+  }
+
+  "Refresh token requester" - {
+
+    "should form requests correctly" in {
+      val secret = ClientSecret("so secret")
+      val token = RefreshToken("foo-12345")
+      val req = client.refreshTokenRequest(AuthConfig(clientId, secret, redirectUri), token)
+
+      req.header[Authorization] shouldEqual Some(Authorization(BasicHttpCredentials(clientId.value, secret.value)))
+      req.entity.contents.get("grant_type") shouldEqual Some("refresh_token")
+      req.entity.contents.get("refresh_token") shouldEqual Some(token.value)
     }
   }
 }
