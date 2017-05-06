@@ -10,7 +10,6 @@ addons:
     packages:
       - lintian
       - fakeroot
-      - tree
 
 cache:
   directories:
@@ -27,7 +26,6 @@ script: |
   sbt test
   sbt debian:packageBin
   mv target/spoiler-free*.deb target/spoiler-free.deb
-  tree
 
 deploy:
   provider: releases
