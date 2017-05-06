@@ -1,0 +1,19 @@
+language: scala
+scala:
+- 2.12.2
+
+script: |
+  set -e
+  sbt test
+  sbt debian:packageBin
+  apt-get install -y tree
+  tree
+
+deploy:
+  provider: releases
+  api_key:
+    secure: hn3+U/EX1flJkGzggVC8bqK0Oi4kuHm9B2teXjqMh9umRrNOlC1xLVekqN0+/w5rIKW+FHETfmFvv/S9TAWW+JZkpBiCt4Hlh3Lpv8Qz1Wz13riM4kNbu06oxfXOJM30Dz/hKpnbxNeZ2GRBzFLTZUjEm5C9Nq0P6RUUcp41SC5wZV5qmBL2clI4fIuoLKRuPtdzTCSX2QNIZyMFr6q2AQ3NXS5rSKJmiIxjd12h1Kh5w9f5UDM+A5qc+Uid/Hrf1EB9INPqADMDcN9ncWNHLLsvVGIHXfcwHyzUFmN50oDUDq9K0wGMKph5dcDwZ1nDxjqBNG1XaT2FXt8crfX+nM7mf5oAH03H0Mw43n3Vu8BbGvE3TVTYc8tezplKgRgiMVz2jPV8ctmqVxRDC1s6/QQL6SQhoEEKaHLzr2/GOgN0WdJRcyfJF4KLE8+uOeMhbcBOuIo46ND0oRtehKGDjNZBiGpIJA52/6Vm7KOoS4XsHYBiG/Qpzdn2gikcseBs7tYhxbFUdQSiXbILOlqD7CVEeIGVmBtmr1VGpi50vNXH22i2PRbA3Z6Po05kSLYz90jPWM2FLsaUFVIjHp1x81+61xIqPyMM+87JKZAr20Gbv25PRIyuVFn2bvwjZ8ASdKA0SElaAjJvuftuuQOtkv0knkN9xQOx30S4O609xwU=
+  file: target/spoiler-free.deb
+  on:
+    repo: tomverran/spoiler-free
+    tags: true
