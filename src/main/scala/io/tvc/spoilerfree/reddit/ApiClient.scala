@@ -54,7 +54,6 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
     HttpResponse(
       status = StatusCodes.TemporaryRedirect,
       headers = List(
-        userAgent,
         Location(
           authorize.withQuery(
             Query(

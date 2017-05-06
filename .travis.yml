@@ -24,9 +24,10 @@ before_cache:
 script: |
   set -e
   sbt test
-  sbt debian:packageBin
-  mv target/spoiler-free*.deb target/spoiler-free.deb
-
+  if [ -n "$TRAVIS_TAG" ]; then
+    sbt debian:packageBin
+    mv target/spoiler-free*.deb target/spoiler-free.deb
+  fi
 deploy:
   provider: releases
   api_key:
