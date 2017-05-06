@@ -17,7 +17,7 @@ object RaceCalendar {
     RaceDates(start = raceStart.minusDays(2).withHour(0), raceStart.withHour(23).withMinute(59).withSecond(59))
   }
 
-  private val dates = settings.tvTimes.map(parseWeekend)
+  private val dates = settings.raceDates.map(parseWeekend)
 
   private[racecalendar] def status(implicit clock: Clock): CalendarStatus = {
     val now = ZonedDateTime.now(clock)
