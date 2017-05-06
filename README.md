@@ -16,6 +16,7 @@ dpkg -i spoiler-free.deb
 # configure the app with the secret env vars
 echo "REDDIT_CLIENT_ID=???" >> /etc/default/spoiler-free
 echo "REDDIT_CLIENT_SECRET=???" >> /etc/default/spoiler-free
+echo "REDDIT_REDIRECT_URL=???" >> /etc/default/spoiler-free
 echo "DYNAMO_TABLE=???" >> /etc/default/spoiler-free
 
 # restart the service so it picks up the config
