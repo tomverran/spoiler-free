@@ -20,7 +20,7 @@ object RaceCalendar {
   private val dates = settings.tvTimes.map(parseWeekend)
 
   private[racecalendar] def status(implicit clock: Clock): CalendarStatus = {
-    val now = ZonedDateTime.ofInstant(clock.instant(), clock.getZone)
+    val now = ZonedDateTime.now(clock)
     dates.find(d => d.start.isBefore(now) && d.end.isAfter(now)).map(_ => RaceWeekend)
       .getOrElse(NormalDay)
   }

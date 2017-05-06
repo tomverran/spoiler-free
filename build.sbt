@@ -1,7 +1,5 @@
 name := "spoiler-free"
 
-version := "1.0"
-
 maintainer := "Tom"
 
 packageSummary := "Spoiler-Free web app"
