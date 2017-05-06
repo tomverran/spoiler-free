@@ -28,6 +28,8 @@ enablePlugins(JavaServerAppPackaging)
 
 enablePlugins(DebianPlugin)
 
+enablePlugins(GitVersioning)
+
 serverLoading in Debian := Some(ServerLoader.Systemd)
 
 val circeVersion = "0.7.0"
