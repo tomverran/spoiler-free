@@ -5,6 +5,12 @@ scala:
 jdk:
   - oraclejdk8
 
+addons:
+  apt:
+    packages:
+      - lintian
+      - fakeroot
+
 script: |
   set -e
   sbt test
