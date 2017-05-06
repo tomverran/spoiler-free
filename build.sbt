@@ -24,13 +24,11 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.13"
 
 libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
-enablePlugins(JavaServerAppPackaging)
+enablePlugins(JavaServerAppPackaging, SystemdPlugin)
 
 enablePlugins(DebianPlugin)
 
 enablePlugins(GitVersioning)
-
-serverLoading in Debian := Some(ServerLoader.Systemd)
 
 val circeVersion = "0.7.0"
 libraryDependencies ++= Seq(
