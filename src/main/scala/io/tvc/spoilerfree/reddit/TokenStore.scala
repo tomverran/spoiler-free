@@ -4,11 +4,15 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder
 import com.gu.scanamo.ScanamoAsync
 import com.gu.scanamo.error.DynamoReadError
 import com.typesafe.scalalogging.LazyLogging
-import io.tvc.spoilerfree.reddit.AuthError.UnknownError
+import io.tvc.spoilerfree.reddit.TokenStore.TokenStoreError
 import io.tvc.spoilerfree.settings.dynamoTable
 
 import scala.concurrent.{ExecutionContext, Future}
 
+
+object TokenStore {
+  case class TokenStoreError(underlying: Throwable)
+}
 
 class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
 
@@ -25,10 +29,10 @@ class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
       }
     }
 
-  def put(token: RefreshToken): Future[Either[AuthError, Unit]] =
+  def put(token: RefreshToken): Future[Either[TokenStoreError, Unit]] =
     ScanamoAsync.put(dynamo)(dynamoTable)(token).map {
       _ => Right(())
     }.recover {
-      case e: Throwable => Left(UnknownError(e.getMessage))
+      case e: Throwable => Left(TokenStoreError(e))
     }
 }

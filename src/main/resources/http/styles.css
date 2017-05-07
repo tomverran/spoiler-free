@@ -24,6 +24,10 @@ a:link, a:visited {
     color: #3F73DB;
 }
 
+a:hover {
+    text-decoration: underline;
+}
+
 a.get-started {
     padding: 10px 20px;
     color: white;
