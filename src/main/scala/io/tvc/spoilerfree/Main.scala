@@ -35,6 +35,10 @@ object Main extends App with LazyLogging {
     getFromResource("http/index.html")
   }
 
+  val styles = path("styles.css") {
+    getFromResource("http/styles.css")
+  }
+
   /**
     * Redirect to reddit and set a state cookie
     */
@@ -60,6 +64,6 @@ object Main extends App with LazyLogging {
   }
 
   // start the actual http server
-  Http().bindAndHandle(index ~ authorise ~ redirect, "0.0.0.0", port = 8080)
+  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080)
   unsubscriber.run
 }
