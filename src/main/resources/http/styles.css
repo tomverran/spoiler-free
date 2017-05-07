@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css?family=Ubuntu');
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Ubuntu', sans-serif;
+    text-align: center;
+}
+
+h1 {
+    font-size: 36px;
+}
+
+p {
+    margin: auto;
+    max-width: 800px;
+    font-size: 18px;
+    line-height: 24px;
+    margin-bottom: 20px;
+}
+
+a:link, a:visited {
+    text-decoration: none;
+    color: #3F73DB;
+}
+
+a.get-started {
+    padding: 10px 20px;
+    color: white;
+    text-align: center;
+    line-height: 56px;
+    background-color: #6CAE75;
+    border-radius: 32px;
+    margin: auto;
+}
