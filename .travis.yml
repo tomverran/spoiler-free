@@ -23,9 +23,9 @@ before_cache:
 
 script: |
   set -e
-  sbt test
+  sbt ++$TRAVIS_SCALA_VERSION test
   if [ -n "$TRAVIS_TAG" ]; then
-    sbt debian:packageBin
+    sbt ++$TRAVIS_SCALA_VERSION debian:packageBin
     mv target/spoiler-free*.deb target/spoiler-free.deb
   fi
 deploy:

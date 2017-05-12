@@ -1,9 +1,9 @@
 package io.tvc.spoilerfree
 
 import java.security.SecureRandom
-import java.time.Clock
+import java.time.{Clock, ZonedDateTime, Duration => JDuration}
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
@@ -12,11 +12,13 @@ import cats.data.{EitherT, NonEmptyList}
 import cats.instances.all._
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
+import io.tvc.spoilerfree.racecalendar.RaceCalendar
 import io.tvc.spoilerfree.reddit.TokenStore.TokenStoreError
 import shapeless.ops.coproduct.Inject
 import shapeless.{:+:, CNil}
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.higherKinds
 import scala.language.implicitConversions
 
@@ -73,5 +75,10 @@ object Main extends App with LazyLogging {
 
   // start the actual http server
   Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080)
-  unsubscriber.run
+  val now = ZonedDateTime.now.minusHours(1)
+
+  RaceCalendar.dates.filter(_.end.isAfter(now))
+    .flatMap(r => List(r.start -> Unsubscribe, r.end -> Subscribe))
+    .map { case (time, action) => JDuration.between(now, time).getSeconds -> action }
+    .collect { case (time, action) if time > 0 => as.scheduler.scheduleOnce(time.seconds)(unsubscriber.run(action)) }
 }

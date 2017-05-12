@@ -1,15 +1,10 @@
 package io.tvc.spoilerfree
 
-import java.time.Clock
-
-import akka.{Done, NotUsed}
-import akka.actor.Cancellable
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
+import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.LazyLogging
-import io.tvc.spoilerfree.reddit.SubscribeAction.{Subscribe, Unsubscribe}
 import io.tvc.spoilerfree.reddit.{AccessToken, ApiClient, SubscribeAction, TokenStore}
-import racecalendar.{NormalDay, RaceCalendar, RaceWeekend}
 
 import scala.concurrent.Future
 
@@ -29,13 +24,9 @@ class Unsubscriber(ts: TokenStore, client: ApiClient) extends LazyLogging {
           List(r)
       }
 
-  def run(implicit clock: Clock, mat: Materializer) =
-    RaceCalendar.stream.flatMapConcat {
-      case (RaceWeekend, NormalDay) => accessTokens.mapAsync(1)(client.subscribe(_, Subscribe)).map(Result)
-      case (NormalDay, RaceWeekend) => accessTokens.mapAsync(1)(client.subscribe(_, Unsubscribe)).map(Result)
-    }.runWith(Sink.foreach(r => logger.info(r.error)))
-
-  def manual(action: SubscribeAction)(implicit mat: Materializer): Future[String] =
+  def run(action: SubscribeAction)(implicit mat: Materializer): Future[Done] = {
+    logger.info(s"Running $action")
     accessTokens.mapAsync(1)(client.subscribe(_, action)).map(Result)
-    .runWith(Sink.fold("") { case(a, b) => a + b })
+    .runWith(Sink.foreach[Result](e => logger.info(e.error)))
+  }
 }
