@@ -77,7 +77,7 @@ object Main extends App with LazyLogging {
   }
 
   val schedules = scheduler.schedule(RaceCalendar.dates, now = ZonedDateTime.now)
-  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080).recover {
+  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = settings.httpPort).recover {
     case _: Throwable =>
       schedules.foreach(_.cancel)
       logger.info(s"Cancelled ${schedules.length} tasks")

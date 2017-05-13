@@ -11,6 +11,7 @@ package object settings {
   private lazy val clientId = reddit.ClientId(config.getString("reddit.client-id"))
   private lazy val clientSecret = reddit.ClientSecret(config.getString("reddit.client-secret"))
   private lazy val redirectUrl: Uri = config.getString("reddit.redirect-url")
+  lazy val httpPort: Int = config.getInt("http.port")
 
   lazy val authConfig = reddit.AuthConfig(clientId, clientSecret, redirectUrl)
   lazy val dynamoTable = config.getString("aws.dynamo-table")
