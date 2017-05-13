@@ -66,7 +66,7 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
             )
           )
         ),
-        `Set-Cookie`(HttpCookie("state", state))
+        `Set-Cookie`(HttpCookie("state", state, path = Some("/")))
       )
     )
   }

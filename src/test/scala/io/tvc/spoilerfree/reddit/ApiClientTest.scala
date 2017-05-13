@@ -34,7 +34,7 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
   "Authorisation URI generator" - {
 
     val uri = authResponse.headers.collect { case l: Location => l }.head.uri
-    val state = authResponse.headers.collect { case `Set-Cookie`(c) => c.value }.head
+    val state = authResponse.headers.collect { case `Set-Cookie`(c) => c }.head
 
     "Be prefixed with the reddit authorization endpoint" in {
       uri.authority.host.toString shouldEqual "www.reddit.com"
@@ -51,8 +51,9 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     }
 
     "Include a state parameter in both the URI and the AuthorisationUri object" in {
-      uri.query().get("state") shouldEqual Some(state)
-      state shouldEqual ConstantRandom.constant.toString
+      uri.query().get("state") shouldEqual Some(state.value)
+      state.value shouldEqual ConstantRandom.constant.toString
+      state.path shouldEqual Some("/")
     }
 
     "Include the given redirect URI" in {
