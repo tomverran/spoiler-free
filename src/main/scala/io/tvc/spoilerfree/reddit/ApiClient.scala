@@ -158,10 +158,15 @@ class ApiClient(implicit val as: ActorSystem, mat: ActorMaterializer) {
         )
       )
 
-  def subscribe(token: AccessToken, action: SubscribeAction): Future[String] =
-    http.singleRequest(subscribeRequest(token, action))
-      .flatMap(_.entity.toStrict(1.second))
-      .map(_.data.decodeString("UTF-8"))
+  def subscribe(token: AccessToken, action: SubscribeAction): Future[Either[AuthError, Unit]] =
+    for {
+      response <- http.singleRequest(subscribeRequest(token, action))
+      entity <- response.entity.toStrict(1.second)
+    } yield response.status match {
+        case e if e.isFailure => Left(UnknownError(entity.data.decodeString("UTF-8")))
+        case _ => Right(())
+    }
+
   /**
     * Parse the HTTP response back from reddit
     */
