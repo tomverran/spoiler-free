@@ -39,7 +39,7 @@ object Main extends App with LazyLogging {
 
   val tokens: reddit.TokenStore = new reddit.TokenStore
   val client: reddit.ApiClient = new reddit.ApiClient
-  val unsubscriber = new Unsubscriber(tokens, client)
+  val scheduler = new Scheduler(tokens, client)
 
   val index = pathEndOrSingleSlash {
     getFromResource("http/index.html")
@@ -73,12 +73,6 @@ object Main extends App with LazyLogging {
     }.getOrElseF(getFromResource("http/error.html").apply(ctx))
   }
 
-  // start the actual http server
   Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080)
-  val now = ZonedDateTime.now.minusHours(1)
-
-  RaceCalendar.dates.filter(_.end.isAfter(now))
-    .flatMap(r => List(r.start -> Unsubscribe, r.end -> Subscribe))
-    .map { case (time, action) => JDuration.between(now, time).getSeconds -> action }
-    .collect { case (time, action) if time > 0 => as.scheduler.scheduleOnce(time.seconds)(unsubscriber.run(action)) }
+  scheduler.schedule(RaceCalendar.dates, now = ZonedDateTime.now)
 }
