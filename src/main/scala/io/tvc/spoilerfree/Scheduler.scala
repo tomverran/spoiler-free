@@ -1,5 +1,6 @@
 package io.tvc.spoilerfree
 
+import java.lang.Math._
 import java.time.{Duration, ZonedDateTime}
 
 import akka.Done
@@ -40,9 +41,9 @@ class Scheduler(ts: TokenStore, client: ApiClient)(implicit ec: ExecutionContext
   def schedule(dates: List[RaceDates], now: ZonedDateTime)(implicit as: ActorSystem): List[Cancellable] =
     dates.filter(_.end.isAfter(now))
       .flatMap(r => List(r.start -> Unsubscribe, r.end -> Subscribe))
-      .map { case (time, action) => Duration.between(now, time).getSeconds -> action }
-      .collect { case (time, action) if time > 0 =>
-        logger.debug(s"Scheduling $action at ${now.plusSeconds(time)}")
-        as.scheduler.scheduleOnce(time.seconds)(run(action))
+      .map { case (time, action) =>
+        logger.debug(s"Scheduling $action at $time")
+        val seconds = max(Duration.between(now, time).getSeconds, 0)
+        as.scheduler.scheduleOnce(seconds.seconds)(run(action))
       }
 }
