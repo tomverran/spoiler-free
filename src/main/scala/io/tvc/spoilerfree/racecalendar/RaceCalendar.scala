@@ -9,7 +9,7 @@ object RaceCalendar {
 
   private[racecalendar] def parseWeekend(date: String): RaceDates = {
     val raceStart = ZonedDateTime.parse(date, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss VV"))
-    RaceDates(start = raceStart.minusDays(2).withHour(0), raceStart.withHour(23).withMinute(59).withSecond(59))
+    RaceDates(start = raceStart.minusDays(2), raceStart.plusDays(1))
   }
 
   val dates = settings.raceDates.map(parseWeekend)

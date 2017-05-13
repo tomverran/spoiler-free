@@ -7,13 +7,14 @@ An app to unsubscribe from /r/formula1 every race weekend to avoid accidental sp
 
 ## Installation
 
-The app ships as a .deb so install on a Debian based OS supporting Systemd.
+I am hosting the app [on Heroku](https://spoiler-free.tvc.io) but I also ship a .deb so you can install it on a Debian based OS supporting Systemd.
+You'll need the JRE installed.
 
 To install the app:
 
 ```bash
 # download the deb and install
-wget https://github.com/tomverran/spoiler-free/releases/download/0.0.3/spoiler-free.deb
+wget https://github.com/tomverran/spoiler-free/releases/download/x.x.x/spoiler-free.deb
 dpkg -i spoiler-free.deb
 
 # configure the app with the secret env vars
