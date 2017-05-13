@@ -3,11 +3,11 @@ package io.tvc.spoilerfree
 import java.security.SecureRandom
 import java.time.{Clock, ZonedDateTime, Duration => JDuration}
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.http.scaladsl.server.RouteResult
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.RouteResult
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import cats.data.{EitherT, NonEmptyList}
 import cats.instances.all._
 import cats.syntax.all._
@@ -18,14 +18,17 @@ import shapeless.ops.coproduct.Inject
 import shapeless.{:+:, CNil}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.language.higherKinds
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
 object Main extends App with LazyLogging {
 
   implicit val as = ActorSystem()
-  implicit val mat = ActorMaterializer()
+  implicit val mat = ActorMaterializer(
+    ActorMaterializerSettings(as).withSupervisionStrategy { e =>
+      logger.error(e.getMessage, e.getCause)
+      Supervision.Resume
+    }
+  )
   implicit val ec = mat.executionContext
   implicit val random = new SecureRandom()
   implicit val clock = Clock.systemUTC
@@ -73,6 +76,11 @@ object Main extends App with LazyLogging {
     }.getOrElseF(getFromResource("http/error.html").apply(ctx))
   }
 
-  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080)
-  scheduler.schedule(RaceCalendar.dates, now = ZonedDateTime.now)
+  val schedules = scheduler.schedule(RaceCalendar.dates, now = ZonedDateTime.now)
+  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = 8080).recover {
+    case _: Throwable =>
+      schedules.foreach(_.cancel)
+      logger.info(s"Cancelled ${schedules.length} tasks")
+      as.terminate.foreach(_ => sys.exit(1))
+  }
 }

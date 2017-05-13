@@ -16,7 +16,6 @@ object TokenStore {
 }
 
 class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
-
   private lazy val dynamo = AmazonDynamoDBAsyncClientBuilder.defaultClient()
 
   def all: Future[List[RefreshToken]] =
@@ -34,7 +33,8 @@ class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
     f.map {
       _ => Right(())
     }.recover {
-      case e: Throwable => Left(TokenStoreError(e))
+      case e: Throwable =>
+        Left(TokenStoreError(e))
     }
   }
 

@@ -26,6 +26,7 @@ Resources:
             Effect: Allow
             Action:
             - dynamodb:PutItem
+            - dynamodb:DeleteItem
             - dynamodb:Scan
             Resource:
              Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}
