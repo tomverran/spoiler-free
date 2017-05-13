@@ -1,5 +1,6 @@
 package io.tvc.spoilerfree.reddit
 
+import com.amazonaws.regions.{Region, Regions}
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder
 import com.gu.scanamo._
 import com.gu.scanamo.error.DynamoReadError
@@ -16,7 +17,10 @@ object TokenStore {
 }
 
 class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
-  private lazy val dynamo = AmazonDynamoDBAsyncClientBuilder.defaultClient()
+  private lazy val dynamo = AmazonDynamoDBAsyncClientBuilder
+    .standard()
+    .withRegion(Regions.EU_WEST_1)
+    .build()
 
   def all: Future[List[RefreshToken]] =
     ScanamoAsync.scan[RefreshToken](dynamo)(dynamoTable).map { results =>
