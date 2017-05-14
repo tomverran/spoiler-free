@@ -2,15 +2,19 @@ package io.tvc.spoilerfree.reddit
 
 import java.security.SecureRandom
 
-import akka.http.scaladsl.model.{HttpRequest, RequestEntity, Uri}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RequestEntity, Uri}
+import HttpMethods._
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.{NonEmptyList, Validated}
-import io.tvc.spoilerfree.reddit.AuthError._
-import org.scalatest.{FreeSpec, Matchers}
+import io.tvc.spoilerfree.reddit.RedditError._
+import org.scalatest.{Assertion, FreeSpec, Matchers}
 import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.headers._
+import io.circe.Json
+import io.circe.Json._
 import io.tvc.spoilerfree.AkkaContext
+import io.tvc.spoilerfree.reddit.SubscribeAction.{Subscribe, Unsubscribe}
 
 
 class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
@@ -21,15 +25,19 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     val constant = 1234345345245l
   }
 
-  implicit class SensibleBody(in: RequestEntity) {
-    def contents = Query(in.asInstanceOf[Strict].data.decodeString("UTF-8"))
-  }
-
   val clientId = ClientId("foo")
   val redirectUri = Uri("https://example.com")
   val auth = AuthConfig(clientId, ClientSecret("foo"), redirectUri)
   val authResponse = client.authRedirect(auth)
   val state = ConstantRandom.constant.toString
+  val accessToken = AccessToken("foo")
+
+  implicit class SensibleBody(in: RequestEntity) {
+    def contents = Query(in.asInstanceOf[Strict].data.decodeString("UTF-8"))
+  }
+
+  def checkAccessToken(req: HttpRequest): Assertion =
+    req.header[Authorization] shouldEqual Some(Authorization(OAuth2BearerToken(accessToken.value)))
 
   "Authorisation URI generator" - {
 
@@ -65,7 +73,7 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     }
 
     "Set the scopes to identity and subscribe" in {
-      uri.query().get("scope") shouldEqual Some("subscribe")
+      uri.query().get("scope") shouldEqual Some("subscribe identity")
     }
   }
 
@@ -79,7 +87,7 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     val invalidScope = "error" -> "invalid_scope"
     val invalidRequest = "error" -> "invalid_request"
 
-    def errors(redditError: AuthError*) =
+    def errors(redditError: RedditError*) =
       Validated.invalid(NonEmptyList.of(redditError.head, redditError.tail:_*))
 
     def req(q: Query) =
@@ -138,9 +146,10 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
     }
   }
 
-  "Refresh token requester" - {
 
-    "should form requests correctly" in {
+  "Refresh token requests" - {
+
+    "Should be correctly formed" in {
       val secret = ClientSecret("so secret")
       val token = RefreshToken("foo-12345")
       val req = client.refreshTokenRequest(AuthConfig(clientId, secret, redirectUri), token)
@@ -148,6 +157,40 @@ class ApiClientTest extends FreeSpec with Matchers with AkkaContext {
       req.header[Authorization] shouldEqual Some(Authorization(BasicHttpCredentials(clientId.value, secret.value)))
       req.entity.contents.get("grant_type") shouldEqual Some("refresh_token")
       req.entity.contents.get("refresh_token") shouldEqual Some(token.value)
+    }
+  }
+
+  "Identity requests" - {
+
+    "Should be correctly formed" in {
+      val req = client.identityRequest(AccessToken("foo"))
+      req.method shouldEqual HttpMethods.GET
+      req.uri shouldEqual client.me
+      checkAccessToken(req)
+    }
+
+    "Should be parsed successfully when successful" in {
+      val success = Json.obj("name" -> Json.fromString("Captain Reddit"))
+      client.identityReader.decodeJson(success) shouldEqual Right("Captain Reddit")
+    }
+  }
+
+  "Filtering /r/all requests" - {
+
+    "Should be correctly formed" in  {
+      val user = UserDetails("foo bar", accessToken)
+      val subscribe = client.filterRequest(user, Subscribe)
+      val unsubscribe = client.filterRequest(user, Unsubscribe)
+
+      subscribe.method shouldEqual DELETE
+      unsubscribe.method shouldEqual PUT
+
+      subscribe.uri shouldEqual unsubscribe.uri
+      subscribe.uri.toString shouldEqual "https://oauth.reddit.com/api/filter/user/foo+bar/f/all/r/formula1"
+      subscribe.entity.contents shouldEqual Query("model" -> """{"name":"formula1"}""")
+      subscribe.entity shouldEqual unsubscribe.entity
+      checkAccessToken(subscribe)
+      checkAccessToken(unsubscribe)
     }
   }
 }

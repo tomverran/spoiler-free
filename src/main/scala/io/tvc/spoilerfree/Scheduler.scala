@@ -4,9 +4,14 @@ import java.lang.Math._
 import java.time.{Duration, ZonedDateTime}
 
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.{Done, NotUsed}
+import cats.instances.future._
+import cats.instances.unit._
+import cats.syntax.cartesian._
+import cats.syntax.either._
+import cats.syntax.semigroup._
 import com.typesafe.scalalogging.LazyLogging
 import io.tvc.spoilerfree.racecalendar.RaceDates
 import io.tvc.spoilerfree.reddit.SubscribeAction.{Subscribe, Unsubscribe}
@@ -29,26 +34,32 @@ class Scheduler(ts: TokenStore, client: ApiClient)(implicit ec: ExecutionContext
     * Grab all the valid refresh tokens from Dynamo and convert them into access tokens,
     * removing any refresh tokens which are now invalid
     */
-  private def tokenOrRemove(r: RefreshToken): Future[Either[TokenStoreError, Option[AccessToken]]] =
-    client.accessToken(settings.authConfig, r).flatMap {
-      case Right(token) => Future.successful(Right(Some(token)))
+  private def tokenOrRemove(u: UserDetails[RefreshToken]): Future[Either[TokenStoreError, Option[UserDetails[AccessToken]]]] =
+    client.accessToken(settings.authConfig, u.token).flatMap {
+      case Right(token) =>
+        Future.successful(Right(Some(u.copy(token = token))))
       case Left(errs) =>
         logger.debug(s"Removing invalid token due to $errs")
-        ts.delete(r).map(_.map(_ => None))
+        ts.delete(u).map(_.map(_ => None))
     }
 
   /**
     *  Apply the given action to all current subscribers
     *  i.e. unsubscribe or subscribe everyone from or to the subreddit
     */
-  private def run(action: SubscribeAction)(implicit mat: Materializer): Future[Done] = {
+  private def run(action: SubscribeAction): Future[Done] = {
     logger.debug(s"Running $action")
     Source.fromFuture(ts.all)
       .mapConcat(identity)
+      .delay(1.seconds)
       .mapAsync(parallelism = 1)(tokenOrRemove)
       .via(unsafe)
       .mapConcat(_.toList)
-      .mapAsync(parallelism = 1)(client.subscribe(_, action))
+      .mapAsync(parallelism = 1) { user =>
+        (client.subscribe(user.token, action) |@| client.filterRAll(user, action)).tupled.map { case (a, b) =>
+          (a.toValidated |+| b.toValidated).toEither
+        }
+      }
       .via(unsafe)
       .runWith(Sink.ignore)
   }

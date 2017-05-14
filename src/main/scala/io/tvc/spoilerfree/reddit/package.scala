@@ -7,22 +7,23 @@ import cats.data.NonEmptyList
 
 package object reddit {
 
-  sealed trait AuthError
-  object AuthError {
+  sealed trait RedditError
+  object RedditError {
 
     // these come from Reddit itself
-    case object AccessDenied extends AuthError
-    case object UnsupportedResponseType extends AuthError
-    case object InvalidScope extends AuthError
-    case object InvalidRequest extends AuthError
+    case object AccessDenied extends RedditError
+    case object UnsupportedResponseType extends RedditError
+    case object InvalidScope extends RedditError
+    case object InvalidRequest extends RedditError
 
-    // these are response URL parse issues
-    case object BadState extends AuthError
-    case object MissingCode extends AuthError
-    case object MissingState extends AuthError
+    // these are parse issues
+    case object BadState extends RedditError
+    case object MissingCode extends RedditError
+    case object MissingState extends RedditError
+    case class UnexpectedJson(data: String) extends RedditError
 
     //good grief who knows what this might be
-    case class UnknownError(what: String) extends AuthError
+    case class UnknownError(what: String) extends RedditError
   }
 
   sealed abstract class SubscribeAction(val value: String)
@@ -33,7 +34,7 @@ package object reddit {
   }
 
   type State = String
-  type RedditNel = NonEmptyList[AuthError]
+  type RedditNel = NonEmptyList[RedditError]
 
   case class ClientId(value: String)
   case class ClientSecret(value: String)
@@ -42,6 +43,7 @@ package object reddit {
   case class AccessToken(value: String)
   case class RefreshToken(value: String)
   case class AccessTokenResponse(token: AccessToken, expires: Long, refresh: RefreshToken)
+  case class UserDetails[A](name: String, token: A)
 
   case class AuthRedirect(uri: Uri, state: HttpCookie)
   case class AuthCode(code: String)

@@ -9,10 +9,10 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
       AttributeDefinitions:
-      - AttributeName: value
+      - AttributeName: name
         AttributeType: S
       KeySchema:
-      - AttributeName: value
+      - AttributeName: name
         KeyType: HASH # THIS IS SO IMPORTANT IT MUST BE SHOUTED
 
   User:

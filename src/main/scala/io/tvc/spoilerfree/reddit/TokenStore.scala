@@ -22,14 +22,14 @@ class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
     .withRegion(Regions.EU_WEST_1)
     .build()
 
-  def all: Future[List[RefreshToken]] =
-    ScanamoAsync.scan[RefreshToken](dynamo)(dynamoTable).map { results =>
+  def all: Future[List[UserDetails[RefreshToken]]] =
+    ScanamoAsync.scan[UserDetails[RefreshToken]](dynamo)(dynamoTable).map { results =>
       results.flatMap {
         case Right(u) =>
           List(u)
         case Left(e) =>
           logger.error(DynamoReadError.describe(e))
-          List.empty[RefreshToken]
+          List.empty[UserDetails[RefreshToken]]
       }
     }
 
@@ -42,9 +42,9 @@ class TokenStore(implicit ec: ExecutionContext) extends LazyLogging {
     }
   }
 
-  def put(token: RefreshToken): Future[Either[TokenStoreError, Unit]] =
-    rescue(ScanamoAsync.put(dynamo)(dynamoTable)(token))
+  def put(user: UserDetails[RefreshToken]): Future[Either[TokenStoreError, Unit]] =
+    rescue(ScanamoAsync.put(dynamo)(dynamoTable)(user))
 
-  def delete(token: RefreshToken): Future[Either[TokenStoreError, Unit]] =
-    rescue(ScanamoAsync.delete(dynamo)(dynamoTable)('value -> token.value))
+  def delete(user: UserDetails[_]): Future[Either[TokenStoreError, Unit]] =
+    rescue(ScanamoAsync.delete(dynamo)(dynamoTable)('name -> user.name))
 }
