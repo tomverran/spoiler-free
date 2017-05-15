@@ -13,7 +13,7 @@ Resources:
         AttributeType: S
       KeySchema:
       - AttributeName: name
-        KeyType: HASH # THIS IS SO IMPORTANT IT MUST BE SHOUTED
+        KeyType: HASH
 
   User:
     Type: "AWS::IAM::User"
