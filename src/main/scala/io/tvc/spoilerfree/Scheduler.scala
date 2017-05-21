@@ -13,15 +13,21 @@ import cats.syntax.cartesian._
 import cats.syntax.either._
 import cats.syntax.semigroup._
 import com.typesafe.scalalogging.LazyLogging
-import io.tvc.spoilerfree.racecalendar.RaceDates
+import io.tvc.spoilerfree.racecalendar.Event
 import io.tvc.spoilerfree.reddit.SubscribeAction.{Subscribe, Unsubscribe}
 import io.tvc.spoilerfree.reddit.TokenStore.TokenStoreError
 import io.tvc.spoilerfree.reddit._
+import net.fortuna.ical4j.util.CompatibilityHints._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 class Scheduler(ts: TokenStore, client: ApiClient)(implicit ec: ExecutionContext, mat: ActorMaterializer) extends LazyLogging {
+
+  // scary ical global properties
+  setHintEnabled(KEY_RELAXED_VALIDATION, true)
+  setHintEnabled(KEY_RELAXED_UNFOLDING, true)
+  setHintEnabled(KEY_RELAXED_PARSING, true)
 
   /**
     * Akka streams uses exceptions for errors
@@ -67,11 +73,11 @@ class Scheduler(ts: TokenStore, client: ApiClient)(implicit ec: ExecutionContext
   /**
     * Given a list of race dates, schedule in the respective unsubscribe and subscribe tasks
     */
-  def schedule(dates: List[RaceDates], now: ZonedDateTime)(implicit as: ActorSystem): List[Cancellable] =
-    dates.filter(_.end.isAfter(now))
-      .flatMap(r => List(r.start -> Unsubscribe, r.end -> Subscribe))
-      .map { case (time, action) =>
-        logger.debug(s"Scheduling $action at $time")
+  def schedule(events: List[Event], now: ZonedDateTime)(implicit as: ActorSystem): List[Cancellable] =
+    events.filter(_.end.isAfter(now))
+      .flatMap(r => List((r.name, r.start, Unsubscribe), (r.name, r.end, Subscribe)))
+      .map { case (name, time, action) =>
+        logger.debug(s"Scheduling $action at $time - $name")
         val seconds = max(Duration.between(now, time).getSeconds, 0)
         as.scheduler.scheduleOnce(seconds.seconds)(run(action))
       }

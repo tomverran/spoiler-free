@@ -22,6 +22,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.13"
 
 libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
+libraryDependencies += "org.mnode.ical4j" % "ical4j" % "2.0.0"
+
 enablePlugins(JavaServerAppPackaging, SystemdPlugin)
 
 enablePlugins(DebianPlugin)

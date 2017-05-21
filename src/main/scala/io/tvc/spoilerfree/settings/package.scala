@@ -16,4 +16,5 @@ package object settings {
   lazy val authConfig = reddit.AuthConfig(clientId, clientSecret, redirectUrl)
   lazy val dynamoTable = config.getString("aws.dynamo-table")
   lazy val raceDates = config.getStringList("f1.races").asScala.toList
+  lazy val icalUrl = config.getString("subreddits.formula1"): Uri
 }

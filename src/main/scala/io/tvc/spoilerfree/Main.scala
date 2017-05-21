@@ -78,11 +78,20 @@ object Main extends App with LazyLogging {
     }.getOrElseF(getFromResource("http/error.html").apply(ctx))
   }
 
-  val schedules = scheduler.schedule(RaceCalendar.dates, now = ZonedDateTime.now)
-  Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = settings.httpPort).recover {
-    case _: Throwable =>
-      schedules.foreach(_.cancel)
-      logger.info(s"Cancelled ${schedules.length} tasks")
-      as.terminate.foreach(_ => sys.exit(1))
+  val schedules = EitherT(RaceCalendar.events).map { dates =>
+    scheduler.schedule(dates, now = ZonedDateTime.now)
+  }.value.map {
+    case Right(l) => l
+    case Left(e) =>
+      logger.error(e.getMessage)
+      List.empty
   }
+
+  val http = Http().bindAndHandle(index ~ styles ~ authorise ~ redirect, "0.0.0.0", port = settings.httpPort)
+  List(schedules, http).foreach(_.recover {
+    case _: Throwable =>
+      schedules.map(_.foreach(_.cancel)).onComplete { _ =>
+        as.terminate.foreach(_ => sys.exit(1))
+      }
+  })
 }
