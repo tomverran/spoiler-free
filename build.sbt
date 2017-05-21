@@ -24,6 +24,8 @@ libraryDependencies += "com.gu" %% "scanamo" % "0.9.2"
 
 libraryDependencies += "org.mnode.ical4j" % "ical4j" % "2.0.0"
 
+libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+
 enablePlugins(JavaServerAppPackaging, SystemdPlugin)
 
 enablePlugins(DebianPlugin)

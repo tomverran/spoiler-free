@@ -8,6 +8,7 @@ import scala.collection.JavaConverters._
 package object settings {
   private val config = ConfigFactory.load
 
+  lazy val appSecret = config.getString("app.secret").getBytes.ensuring(_.length == 64, s"incorrect length")
   private lazy val clientId = reddit.ClientId(config.getString("reddit.client-id"))
   private lazy val clientSecret = reddit.ClientSecret(config.getString("reddit.client-secret"))
   private lazy val redirectUrl: Uri = config.getString("reddit.redirect-url")
@@ -15,6 +16,5 @@ package object settings {
 
   lazy val authConfig = reddit.AuthConfig(clientId, clientSecret, redirectUrl)
   lazy val dynamoTable = config.getString("aws.dynamo-table")
-  lazy val raceDates = config.getStringList("f1.races").asScala.toList
   lazy val icalUrl = config.getString("subreddits.formula1"): Uri
 }

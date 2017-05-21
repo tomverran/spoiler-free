@@ -11,6 +11,9 @@ addons:
       - lintian
       - fakeroot
 
+env:
+  APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 cache:
   directories:
     - $HOME/.ivy2/cache
